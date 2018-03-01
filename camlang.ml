@@ -23,12 +23,16 @@ type mlang =
   | Fun of variable list * mlang
   | Call of mlang * (mlang list)
 
+let rec arg_list = let open Sexp in function
+  | [] -> []
+  | SYM(x)::xs -> x :: arg_list xs
+  | _ -> raise (Syntax_error "Non-variable in function arg list.")
 (* Parses s-expressions into an MLang AST *)
 let rec parse = let open Sexp in function
   | SEXP[SYM("bind");SEXP[SYM(id);bound_expr]; body] ->
     Bind (id, parse bound_expr, parse body)
-  | SEXP[SYM("fun");SEXP[SYM(id)]; body] ->
-    Fun ([id], parse body)
+  | SEXP[SYM("fun");SEXP(ids); body] ->
+    Fun (arg_list ids, parse body)
   | SEXP(x::xs) -> Call(parse x, List.map parse xs)
   | INT x -> Int x
   | SYM x -> Var x
